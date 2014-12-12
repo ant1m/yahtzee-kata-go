@@ -75,7 +75,7 @@ func (d Dices) push(v int) {
 	d[len(d)-1] = v
 }
 
-func sum(d []int) int {
+func (d Dices)sum() int {
 	var result int
 	for _, val := range d {
 		result += val
@@ -91,6 +91,18 @@ func (d Dices) sameValues() bool {
 		}
 	}
 	return true
+}
+
+func (d Dices) rollsNot(val int, size int) []int {
+	var index int
+	newRoll := make([]int, size)
+	for _, j := range d {
+		if j != val {
+			newRoll[index] = j
+			index++
+		}
+	}
+	return newRoll
 }
 
 func yahzee(sortedRoll Roll) (int, string) {
@@ -133,19 +145,7 @@ var petiteSuite = sameRoll(Roll{5, 4, 3, 2, 1}, "Tiote suite", 15)
 var grandeSuite = sameRoll(Roll{6, 5, 4, 3, 2}, "grande suite", 20)
 
 func chance(sortedRoll Roll) (int, string) {
-	return sum(sortedRoll), "chance"
-}
-
-func rollsNot(roll Roll, val int, size int) []int {
-	var index int
-	newRoll := make([]int, size)
-	for _, j := range roll {
-		if j != val {
-			newRoll[index] = j
-			index++
-		}
-	}
-	return newRoll
+	return Dices(sortedRoll).sum(), "chance"
 }
 
 func full(sortedRoll Roll) (int, string) {
@@ -155,7 +155,7 @@ func full(sortedRoll Roll) (int, string) {
 		return 0, name
 	}
 	val := b / 3
-	newRoll := rollsNot(sortedRoll, val, 2)
+	newRoll := Dices(sortedRoll).rollsNot(val, 2)
 	p, _ := paire(newRoll)
 	if p == 0 {
 		return 0, name
@@ -170,7 +170,7 @@ func doublePaire(sortedRoll Roll) (int, string) {
 		return 0, name
 	}
 	val := p / 2
-	newRoll := rollsNot(sortedRoll, val, 3)
+	newRoll := Dices(sortedRoll).rollsNot(val, 3)
 	deuxiemePaire, _ := paire(newRoll)
 	if deuxiemePaire == 0 {
 		return 0, name
