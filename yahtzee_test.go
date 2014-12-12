@@ -22,19 +22,20 @@ func testRollResult(t *testing.T, expectedName string, fun rollResult, roll Roll
 
 func TestRollResults(t *testing.T) {
 	var values = []struct {
-		expectedName string
-		fun rollResult
-		roll Roll
-		expectedResult int}{
-			{"paire", paire, Roll{3, 6, 6, 4, 5}, 12},
-			{"doublePaire", doublePaire, Roll{3, 6, 6, 4, 4}, 20},
-			{"brelan", brelan, Roll{6, 6, 6, 4, 4}, 18},
-			{"carre", carre, Roll{6, 6, 6, 6, 4}, 24},
-			{"yahzee", yahzee, Roll{6, 6, 6, 6, 6}, 50},
-			{"trois", trois, Roll{3, 2, 2, 2, 2}, 3},
-			{"Tiote suite", petiteSuite, Roll{5, 4, 3, 2, 1}, 15},
-			{"full", full, Roll{5, 5, 5, 3, 3}, 21},
-		}
+		expectedName   string
+		fun            rollResult
+		roll           Roll
+		expectedResult int
+	}{
+		{"paire", paire, Roll{3, 6, 6, 4, 5}, 12},
+		{"doublePaire", doublePaire, Roll{3, 6, 6, 4, 4}, 20},
+		{"brelan", brelan, Roll{6, 6, 6, 4, 4}, 18},
+		{"carre", carre, Roll{6, 6, 6, 6, 4}, 24},
+		{"yahzee", yahzee, Roll{6, 6, 6, 6, 6}, 50},
+		{"trois", trois, Roll{3, 2, 2, 2, 2}, 3},
+		{"Tiote suite", petiteSuite, Roll{5, 4, 3, 2, 1}, 15},
+		{"full", full, Roll{5, 5, 5, 3, 3}, 21},
+	}
 	for _, val := range values {
 		testRollResult(t, val.expectedName, val.fun, val.roll, val.expectedResult)
 	}
@@ -50,40 +51,41 @@ func TestCheck(t *testing.T) {
 
 func sameValuesInRoll(nb int, name string) rollResult {
 	return func(sortedRoll Roll) (int, string) {
-		same := make([]int, nb-1)
-
-	for _, val := range sortedRoll {
-		if  same[0]!= 0 && sameValues(same){
+		same := Dices(make([]int, nb-1))
+		for _, val := range sortedRoll {
+			if same[0] != 0 && same.sameValues() {
 				return nb * val, name
 			}
-		push(same, val)
+			same.push(val)
+		}
+		return 0, name
 	}
-	return 0, name}
 }
 
 var paire = sameValuesInRoll(2, "paire")
 var brelan = sameValuesInRoll(3, "brelan")
 var carre = sameValuesInRoll(4, "carre")
 
+type Dices []int
 
-func push(tab []int, v int) {
-	for i := 1; i < len(tab); i++ {
-		tab[i-1] = tab[i]
+func (d Dices) push(v int) {
+	for i := 1; i < len(d); i++ {
+		d[i-1] = d[i]
 	}
-	tab[len(tab)-1] = v
+	d[len(d)-1] = v
 }
 
-func sum(tab []int) int {
+func sum(d []int) int {
 	var result int
-	for _, val := range tab {
+	for _, val := range d {
 		result += val
 	}
 	return result
 }
 
-func sameValues(tab []int) bool {
-	v := tab[0]
-	for _, val := range tab {
+func (d Dices) sameValues() bool {
+	v := d[0]
+	for _, val := range d {
 		if v != val {
 			return false
 		}
@@ -93,16 +95,11 @@ func sameValues(tab []int) bool {
 
 func yahzee(sortedRoll Roll) (int, string) {
 	name := "yahzee"
-
-	p := sortedRoll[0]
-	for _, val := range sortedRoll {
-		if p != val {
-			return 0, name
-		}
+	if Dices(sortedRoll).sameValues() {
+		return 50, name
 	}
-	return 50, name
+	return 0, name
 }
-
 
 func unit(nb int, name string) rollResult {
 	return func(roll Roll) (int, string) {
@@ -112,7 +109,7 @@ func unit(nb int, name string) rollResult {
 				result = result + nb
 			}
 		}
-		return result,name
+		return result, name
 	}
 }
 
@@ -125,41 +122,40 @@ var six = unit(6, "six")
 
 func sameRoll(roll Roll, name string, score int) rollResult {
 	return func(nr Roll) (int, string) {
-		if (reflect.DeepEqual(roll, nr)){
+		if reflect.DeepEqual(roll, nr) {
 			return score, name
 		}
 		return 0, name
 	}
 }
 
-var petiteSuite = sameRoll(Roll{5,4,3,2,1},"Tiote suite", 15)
-var grandeSuite = sameRoll(Roll{6,5,4,3,2},"grande suite", 20)
+var petiteSuite = sameRoll(Roll{5, 4, 3, 2, 1}, "Tiote suite", 15)
+var grandeSuite = sameRoll(Roll{6, 5, 4, 3, 2}, "grande suite", 20)
 
 func chance(sortedRoll Roll) (int, string) {
-	name := "chance"
-	var result int
-	for _, val := range sortedRoll {
-		result += val
-	}
-	return result, name
+	return sum(sortedRoll), "chance"
 }
 
-func full(sortedRoll Roll) (int, string) {
-	name := "full"
-
-	b, _ := brelan(sortedRoll)
-	if b == 0 {
-		return 0, name
-	}
-	val := b / 3
-	newRoll := make([]int, len(sortedRoll)-3)
+func rollsNot(roll Roll, val int, size int) []int {
 	var index int
-	for _, j := range sortedRoll {
+	newRoll := make([]int, size)
+	for _, j := range roll {
 		if j != val {
 			newRoll[index] = j
 			index++
 		}
 	}
+	return newRoll
+}
+
+func full(sortedRoll Roll) (int, string) {
+	name := "full"
+	b, _ := brelan(sortedRoll)
+	if b == 0 {
+		return 0, name
+	}
+	val := b / 3
+	newRoll := rollsNot(sortedRoll, val, 2)
 	p, _ := paire(newRoll)
 	if p == 0 {
 		return 0, name
@@ -169,20 +165,12 @@ func full(sortedRoll Roll) (int, string) {
 
 func doublePaire(sortedRoll Roll) (int, string) {
 	name := "doublePaire"
-
 	p, _ := paire(sortedRoll)
 	if p == 0 {
 		return 0, name
 	}
 	val := p / 2
-	newRoll := make([]int, len(sortedRoll)-2)
-	var index int
-	for _, j := range sortedRoll {
-		if j != val {
-			newRoll[index] = j
-			index++
-		}
-	}
+	newRoll := rollsNot(sortedRoll, val, 3)
 	deuxiemePaire, _ := paire(newRoll)
 	if deuxiemePaire == 0 {
 		return 0, name
