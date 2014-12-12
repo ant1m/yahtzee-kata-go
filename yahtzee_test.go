@@ -8,80 +8,39 @@ import (
 
 var functions = []rollResult{carre, un, deux, petiteSuite, grandeSuite, yahzee}
 
-func TestCanGetPaire(t *testing.T) {
-	roll := []int{3, 6, 6, 4, 5}
+type Roll []int
+type rollResult func(Roll) (int, string)
 
-	if result, _ := paire(roll); result != 12 {
+func testRollResult(t *testing.T, expectedName string, fun rollResult, roll Roll, expectedResult int) {
+	result, name := fun(roll)
+	if result != expectedResult || name != expectedName {
+		println(result)
+		fmt.Println(expectedName, " should return ", expectedResult, ",", expectedName)
 		t.Fail()
 	}
 }
 
-func TestCanGetDoublePaire(t *testing.T) {
-	roll := []int{3, 6, 6, 4, 4}
-
-	if result, _ := doublePaire(roll); result != 20 {
-		t.Fail()
+func TestRollResults(t *testing.T) {
+	var values = []struct {
+		expectedName string
+		fun rollResult
+		roll Roll
+		expectedResult int}{
+			{"paire", paire, Roll{3, 6, 6, 4, 5}, 12},
+			{"doublePaire", doublePaire, Roll{3, 6, 6, 4, 4}, 20},
+			{"brelan", brelan, Roll{6, 6, 6, 4, 4}, 18},
+			{"carre", carre, Roll{6, 6, 6, 6, 4}, 24},
+			{"yahzee", yahzee, Roll{6, 6, 6, 6, 6}, 50},
+			{"trois", trois, Roll{3, 2, 2, 2, 2}, 3},
+			{"Tiote suite", petiteSuite, Roll{5, 4, 3, 2, 1}, 15},
+			{"full", full, Roll{5, 5, 5, 3, 3}, 21},
+		}
+	for _, val := range values {
+		testRollResult(t, val.expectedName, val.fun, val.roll, val.expectedResult)
 	}
 }
 
-func TestCanGetBrelan(t *testing.T) {
-	roll := []int{6, 6, 6, 4, 5}
-
-	if result, _ := brelan(roll); result != 18 {
-		t.Fail()
-	}
-}
-
-func TestCanGetBrelanForFull(t *testing.T) {
-	roll := []int{6, 6, 6}
-
-	if result, _ := brelan(roll); result != 18 {
-		t.Fail()
-	}
-}
-
-func TestCanGetCarre(t *testing.T) {
-	roll := []int{6, 6, 6, 6, 5}
-
-	if result, _ := carre(roll); result != 24 {
-		t.Fail()
-	}
-}
-
-func TestCanGetYahzee(t *testing.T) {
-	roll := []int{6, 6, 6, 6, 6}
-
-	if result, _ := yahzee(roll); result != 50 {
-		t.Fail()
-	}
-}
-
-func TestCanGetTrois(t *testing.T) {
-	roll := []int{3, 2, 2, 2, 2}
-
-	if result, _ := trois(roll); result != 3 {
-		t.Fail()
-	}
-}
-
-func TestCanGetPetiteSuite(t *testing.T) {
-	roll := []int{5, 4, 3, 2, 1}
-
-	if result, _ := petiteSuite(roll); result != 15 {
-		t.Fail()
-	}
-}
-
-func TestCanGetFull(t *testing.T) {
-	roll := []int{5, 5, 5, 3, 3}
-
-	if result, _ := Full(roll); result != 21 {
-		fmt.Println(Full(roll))
-		t.Fail()
-	}
-}
-
-func TestCheck2(t *testing.T) {
+func TestCheck(t *testing.T) {
 	roll := []int{6, 5, 4, 1, 1}
 
 	name := check(roll)
@@ -89,66 +48,50 @@ func TestCheck2(t *testing.T) {
 	println(name)
 }
 
-type Result struct {
-	Category string
-}
+func sameValuesInRoll(nb int, name string) rollResult {
+	return func(sortedRoll Roll) (int, string) {
+		same := make([]int, nb-1)
 
-func Check(roll []int) *Result {
-
-	return &Result{Category: "PAIRE"}
-}
-
-func paire(sortedRoll []int) (int, string) {
-	name := "paire"
-	var p int = 0
 	for _, val := range sortedRoll {
-		if p != 0 {
-			if val == p {
-				return 2 * val, name
+		if  same[0]!= 0 && sameValues(same){
+				return nb * val, name
 			}
-		}
-		p = val
+		push(same, val)
 	}
-	return 0, name
+	return 0, name}
 }
 
-func brelan(sortedRoll []int) (int, string) {
-	name := "brelan"
+var paire = sameValuesInRoll(2, "paire")
+var brelan = sameValuesInRoll(3, "brelan")
+var carre = sameValuesInRoll(4, "carre")
 
-	var p1 int = 0
-	var p2 int = 0
-	for _, val := range sortedRoll {
-		if p1+p2 != 0 {
-			if val == p1 && p1 == p2 {
-				return 3 * val, name
-			}
-		}
-		p1 = p2
-		p2 = val
+
+func push(tab []int, v int) {
+	for i := 1; i < len(tab); i++ {
+		tab[i-1] = tab[i]
 	}
-	return 0, name
+	tab[len(tab)-1] = v
 }
 
-func carre(sortedRoll []int) (int, string) {
-	name := "carre"
-
-	var p1 int = 0
-	var p2 int = 0
-	var p3 int = 0
-	for _, val := range sortedRoll {
-		if p1+p2+p3 != 0 {
-			if val == p1 && p1 == p2 && p2 == p3 {
-				return 4 * val, name
-			}
-		}
-		p1 = p2
-		p2 = p3
-		p3 = val
+func sum(tab []int) int {
+	var result int
+	for _, val := range tab {
+		result += val
 	}
-	return 0, name
+	return result
 }
 
-func yahzee(sortedRoll []int) (int, string) {
+func sameValues(tab []int) bool {
+	v := tab[0]
+	for _, val := range tab {
+		if v != val {
+			return false
+		}
+	}
+	return true
+}
+
+func yahzee(sortedRoll Roll) (int, string) {
 	name := "yahzee"
 
 	p := sortedRoll[0]
@@ -160,7 +103,71 @@ func yahzee(sortedRoll []int) (int, string) {
 	return 50, name
 }
 
-func doublePaire(sortedRoll []int) (int, string) {
+
+func unit(nb int, name string) rollResult {
+	return func(roll Roll) (int, string) {
+		var result int
+		for _, v := range roll {
+			if v == nb {
+				result = result + nb
+			}
+		}
+		return result,name
+	}
+}
+
+var un = unit(1, "un")
+var deux = unit(2, "deux")
+var trois = unit(3, "trois")
+var quatre = unit(4, "quatre")
+var cinq = unit(5, "cinq")
+var six = unit(6, "six")
+
+func sameRoll(roll Roll, name string, score int) rollResult {
+	return func(nr Roll) (int, string) {
+		if (reflect.DeepEqual(roll, nr)){
+			return score, name
+		}
+		return 0, name
+	}
+}
+
+var petiteSuite = sameRoll(Roll{5,4,3,2,1},"Tiote suite", 15)
+var grandeSuite = sameRoll(Roll{6,5,4,3,2},"grande suite", 20)
+
+func chance(sortedRoll Roll) (int, string) {
+	name := "chance"
+	var result int
+	for _, val := range sortedRoll {
+		result += val
+	}
+	return result, name
+}
+
+func full(sortedRoll Roll) (int, string) {
+	name := "full"
+
+	b, _ := brelan(sortedRoll)
+	if b == 0 {
+		return 0, name
+	}
+	val := b / 3
+	newRoll := make([]int, len(sortedRoll)-3)
+	var index int
+	for _, j := range sortedRoll {
+		if j != val {
+			newRoll[index] = j
+			index++
+		}
+	}
+	p, _ := paire(newRoll)
+	if p == 0 {
+		return 0, name
+	}
+	return b + p, name
+}
+
+func doublePaire(sortedRoll Roll) (int, string) {
 	name := "doublePaire"
 
 	p, _ := paire(sortedRoll)
@@ -183,123 +190,7 @@ func doublePaire(sortedRoll []int) (int, string) {
 	return p + deuxiemePaire, name
 }
 
-func un(sortedRoll []int) (int, string) {
-	name := "un"
-	var result int
-	for _, j := range sortedRoll {
-		if j == 1 {
-			result++
-		}
-	}
-	return result, name
-}
-
-func deux(sortedRoll []int) (int, string) {
-	name := "deux"
-	var result int
-	for _, j := range sortedRoll {
-		if j == 2 {
-			result += 2
-		}
-	}
-	return result, name
-}
-
-func trois(sortedRoll []int) (int, string) {
-	name := "trois"
-	var result int
-	for _, j := range sortedRoll {
-		if j == 3 {
-			result += 3
-		}
-	}
-	return result, name
-}
-
-func quatre(sortedRoll []int) (int, string) {
-	name := "quatre"
-	var result int
-	for _, j := range sortedRoll {
-		if j == 4 {
-			result += 4
-		}
-	}
-	return result, name
-}
-
-func cinq(sortedRoll []int) (int, string) {
-	name := "cinq"
-	var result int
-	for _, j := range sortedRoll {
-		if j == 5 {
-			result += 5
-		}
-	}
-	return result, name
-}
-
-func six(sortedRoll []int) (int, string) {
-	name := "six"
-	var result int
-	for _, j := range sortedRoll {
-		if j == 6 {
-			result += 6
-		}
-	}
-	return result, name
-}
-
-func petiteSuite(sortedRoll []int) (int, string) {
-	name := "Tiote suite"
-	if reflect.DeepEqual(sortedRoll, []int{5, 4, 3, 2, 1}) {
-		return 15, name
-	}
-	return 0, name
-}
-
-func grandeSuite(sortedRoll []int) (int, string) {
-	name := "grande suite"
-	if reflect.DeepEqual(sortedRoll, []int{6, 5, 4, 3, 2}) {
-		return 20, name
-	}
-	return 0, name
-}
-
-func chance(sortedRoll []int) (int, string) {
-	name := "chance"
-	var result int
-	for _, val := range sortedRoll {
-		result += val
-	}
-	return result, name
-}
-
-func Full(sortedRoll []int) (int, string) {
-	name := "Full"
-
-	b, _ := brelan(sortedRoll)
-	if b == 0 {
-		return 0, name
-	}
-	val := b / 3
-	newRoll := make([]int, len(sortedRoll)-3)
-	var index int
-	for _, j := range sortedRoll {
-		if j != val {
-			newRoll[index] = j
-			index++
-		}
-	}
-	p, _ := paire(newRoll)
-	if p == 0 {
-		return 0, name
-	}
-	return b + p, name
-}
-
-type rollResult func([]int) (int, string)
-
-func check(roll []int) string {
+func check(roll Roll) string {
 	var category = ""
 	var max int
 	var maxIndex int
